@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cassandraWorkbench.activeClusterName": "Cluster AllowAllAuthenticator",
+		"cassandraWorkbench.activeKeyspace": [
+			[
+				"Cluster AllowAllAuthenticator",
+				"crypto"
+			]
+		],
+		"cassandraWorkbench.splitPosition": 59.294085110796146
+	}
+}
