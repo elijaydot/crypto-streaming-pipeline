@@ -1,9 +1,9 @@
 import logging
+import time
 import duckdb
 from cassandra.cluster import Cluster
-from cassandra.auth import PlainTextAuthProvider
 from cassandra.policies import RoundRobinPolicy
-from datetime import datetime, timezone
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -13,14 +13,38 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────
 
 class CassandraSink:
-    def __init__(self, host: str = "cassandra", port: int = 9042):
+    def __init__(
+        self,
+        host: str = "cassandra",
+        port: int = 9042,
+        connect_retries: int = 15,
+        retry_delay_sec: int = 5,
+    ):
         self.cluster = Cluster(
             [host],
             port=port,
             load_balancing_policy=RoundRobinPolicy(),
             protocol_version=5,
         )
-        self.session = self.cluster.connect("crypto")
+
+        self.session = None
+        for attempt in range(1, connect_retries + 1):
+            try:
+                self.session = self.cluster.connect("crypto")
+                break
+            except Exception as e:
+                if attempt == connect_retries:
+                    self.cluster.shutdown()
+                    raise
+                logger.warning(
+                    "Cassandra not ready (%s/%s): %s. Retrying in %ss...",
+                    attempt,
+                    connect_retries,
+                    e,
+                    retry_delay_sec,
+                )
+                time.sleep(retry_delay_sec)
+
         self._prepare_statements()
         logger.info("Connected to Cassandra")
 
